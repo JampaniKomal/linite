@@ -283,6 +283,13 @@
             const optionConfirm = document.getElementById('option-confirm');
             const customTooltip = document.getElementById('custom-tooltip');
 
+            // An app is available on the current distro if it has a simple
+            // package name OR a complex (multi-step) install defined for it.
+            function isAppAvailable(appId) {
+                return appState.distroPackageMap[appId] !== null && appState.distroPackageMap[appId] !== undefined
+                    || Boolean(appState.complexInstallMap[appId]);
+            }
+
             // --- INITIALIZATION ---
             async function init() {
                 try {
@@ -373,7 +380,7 @@
                     applist.className = 'flex flex-col gap-3';
                     
                     category.apps.forEach(app => {
-                        const isAvailable = appState.distroPackageMap[app.id] !== null || appState.complexInstallMap[app.id];
+                        const isAvailable = isAppAvailable(app.id);
                         const label = document.createElement('label');
                         label.className = 'brutalist-checkbox-label';
                         if (!isAvailable) label.classList.add('disabled');
@@ -434,7 +441,7 @@
                         appState.complexInstallMap = {};
                     }
                     
-                    const availableApps = new Set(Object.keys(appState.distroPackageMap).filter(id => appState.distroPackageMap[id]));
+                    const availableApps = new Set(Object.keys(appState.distroPackageMap).filter(isAppAvailable));
                     appState.selectedApps = new Set([...appState.selectedApps].filter(id => availableApps.has(id)));
 
                     await renderAppView();
@@ -458,7 +465,7 @@
                 } else {
                     appState.activePresetName = presetName;
                     appState.selectedApps.clear();
-                    const availableApps = new Set(Object.keys(appState.distroPackageMap).filter(id => appState.distroPackageMap[id]));
+                    const availableApps = new Set(Object.keys(appState.distroPackageMap).filter(isAppAvailable));
                     appIds.forEach(appId => {
                         if (availableApps.has(appId)) appState.selectedApps.add(appId);
                     });
@@ -491,7 +498,7 @@
                 const activePreset = appState.presetsList.find(p => p.name === appState.activePresetName);
                 if (!activePreset) return;
 
-                const availablePresetApps = new Set(activePreset.apps.filter(id => appState.distroPackageMap[id] !== null));
+                const availablePresetApps = new Set(activePreset.apps.filter(isAppAvailable));
 
                 let isMatching = availablePresetApps.size === appState.selectedApps.size;
                 if (isMatching) {
